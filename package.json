@@ -1,6 +1,6 @@
 {
   "name": "obsidian-claude-code-skills",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Stream Claude Code skill responses into a persistent side panel from any note.",
   "main": "main.js",
   "scripts": {
