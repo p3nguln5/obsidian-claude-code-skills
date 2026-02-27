@@ -1,0 +1,291 @@
+.claude-skills-modal .modal-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+.claude-skills-modal .claude-skill-header {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--text-accent);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.claude-skills-modal .claude-streaming-container {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 200px;
+  max-height: 60vh;
+}
+
+.claude-skills-modal .claude-streaming {
+  font-family: var(--font-monospace);
+  font-size: 0.85em;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 12px;
+  background: var(--background-secondary);
+  border-radius: 4px;
+  color: var(--text-normal);
+  min-height: 100px;
+  line-height: 1.5;
+}
+
+.claude-skills-modal .claude-result-rendered {
+  padding: 0 4px;
+  overflow-y: auto;
+}
+
+.claude-skills-modal .claude-status {
+  font-size: 0.8em;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.claude-skills-modal .claude-button-row {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.claude-skills-modal .claude-button-row button {
+  cursor: pointer;
+}
+
+/* ── Claude Code Skills Side Panel ────────────────────────────────────────── */
+
+.claude-panel-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.claude-panel-session-bar {
+  padding: 6px 12px;
+  background: var(--background-secondary);
+  border-bottom: 1px solid var(--background-modifier-border);
+  flex-shrink: 0;
+}
+
+.claude-panel-skill-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.claude-panel-skill-label.is-streaming {
+  color: var(--color-green, #4caf50);
+}
+
+.claude-panel-skill-label.is-streaming::before {
+  content: "● ";
+  animation: claude-pulse 1s ease-in-out infinite;
+}
+
+@keyframes claude-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.25; }
+}
+
+/* Three-dot bounce loader */
+.claude-loading-dots {
+  display: flex;
+  gap: 5px;
+  padding: 6px 2px;
+  align-items: center;
+}
+
+.claude-loading-dots span {
+  width: 7px;
+  height: 7px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  animation: claude-dot-bounce 1.3s ease-in-out infinite;
+  opacity: 0.5;
+}
+
+.claude-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.claude-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes claude-dot-bounce {
+  0%, 80%, 100% { transform: translateY(0)   scale(0.85); opacity: 0.4; }
+  40%           { transform: translateY(-5px) scale(1.1);  opacity: 1;   }
+}
+
+.claude-panel-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 12px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.claude-panel-separator {
+  border: none;
+  border-top: 1px dashed var(--background-modifier-border);
+  margin: 4px 0;
+  flex-shrink: 0;
+}
+
+/* User and assistant message bubbles */
+.claude-msg-user,
+.claude-msg-assistant {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.claude-msg-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+
+.claude-msg-user .claude-msg-label {
+  color: var(--interactive-accent);
+}
+
+.claude-msg-user .claude-msg-content {
+  background: var(--background-secondary);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-normal);
+}
+
+.claude-msg-assistant .claude-msg-content {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Live streaming: raw <pre> while text arrives */
+.claude-streaming {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--font-monospace);
+  font-size: 13px;
+  margin: 0;
+  background: none;
+  padding: 0;
+  color: var(--text-normal);
+  line-height: 1.5;
+}
+
+/* Rendered Markdown output */
+.claude-result-rendered {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.claude-error {
+  color: var(--text-error);
+  font-style: italic;
+  font-size: 13px;
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
+
+.claude-panel-footer {
+  border-top: 1px solid var(--background-modifier-border);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.claude-panel-input-row {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.claude-panel-input {
+  flex: 1;
+  resize: none;
+  min-height: 56px;
+  max-height: 140px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 13px;
+  font-family: var(--font-text);
+  line-height: 1.5;
+}
+
+.claude-panel-input:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+}
+
+.claude-panel-input:disabled {
+  opacity: 0.6;
+}
+
+.claude-panel-send-btn {
+  padding: 0 12px;
+  height: 32px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  align-self: flex-end;
+  flex-shrink: 0;
+}
+
+.claude-panel-send-btn:hover {
+  background: var(--interactive-accent-hover);
+}
+
+.claude-panel-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.claude-panel-action-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.claude-panel-action-row button {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.claude-panel-action-row button:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.claude-close-session-btn {
+  margin-left: auto !important;
+  color: var(--text-error) !important;
+  border-color: var(--background-modifier-error) !important;
+}
+
+.claude-close-session-btn:hover {
+  background: var(--background-modifier-error) !important;
+}
