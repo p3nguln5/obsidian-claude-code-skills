@@ -90,9 +90,9 @@ export class ClaudePanel extends ItemView {
     const copyBtn = actionRow.createEl("button", { text: "Copy last" });
     copyBtn.addEventListener("click", () => {
       if (this.lastResponseText) {
-        navigator.clipboard.writeText(this.lastResponseText).then(() => {
-          new Notice("Copied to clipboard");
-        });
+        navigator.clipboard.writeText(this.lastResponseText)
+          .then(() => new Notice("Copied to clipboard"))
+          .catch(() => new Notice("Copy failed — check clipboard permissions"));
       }
     });
 
