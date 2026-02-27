@@ -6,7 +6,7 @@ import type { PluginSettings } from "./types";
 
 // ── Path validation ────────────────────────────────────────────────────────────
 
-const VALID_BINARY_NAMES = ["claude", "claude-code"];
+const VALID_BINARY_NAMES = ["claude", "claude-code", "claude.cmd"];
 
 function validatePaths(settings: PluginSettings): void {
   const name = path.basename(settings.claudeBinPath);
@@ -37,72 +37,21 @@ function validatePaths(settings: PluginSettings): void {
   }
 }
 
-// ── OS-level process isolation ─────────────────────────────────────────────────
+// ── Spawn options ──────────────────────────────────────────────────────────────
 
 interface SpawnTarget {
   command: string;
   args: string[];
+  shell: boolean;
 }
 
 /**
- * Wraps the claude command with OS-native process isolation where available.
- *
- * Linux (systemd):  systemd-run --scope --user
- *                     -p IPAddressDeny=any   — kernel eBPF socket filter on cgroup,
- *                                              no userspace bypass possible
- *
- * macOS:            sandbox-exec with Apple Sandbox profile that (deny network*).
- *
- * Windows / other:  No OS wrapper. Relies on --allowedTools "Skill" + PreToolUse hooks.
+ * On Windows, .cmd files cannot be spawned directly by Node — they require
+ * shell: true. On all other platforms shell is not needed.
  */
-function buildIsolatedSpawn(claudeBin: string, claudeArgs: string[]): SpawnTarget {
-  const platform = process.platform;
-
-  if (platform === "linux") {
-    const systemdRun = "/usr/bin/systemd-run";
-    try {
-      fs.accessSync(systemdRun, fs.constants.X_OK);
-      return {
-        command: systemdRun,
-        args: [
-          "--scope", "--user", "--quiet",
-          "-p", "IPAddressDeny=any",
-          "--",
-          claudeBin,
-          ...claudeArgs,
-        ],
-      };
-    } catch {
-      // systemd-run not available — fall through
-    }
-  }
-
-  if (platform === "darwin") {
-    const sandboxExec = "/usr/bin/sandbox-exec";
-    try {
-      fs.accessSync(sandboxExec, fs.constants.X_OK);
-      const profile = [
-        "(version 1)",
-        "(deny default)",
-        "(allow process-exec*)",
-        "(allow process-fork)",
-        "(allow signal)",
-        "(allow sysctl-read)",
-        "(allow file-read*)",
-        "(allow file-write-data (literal \"/dev/null\"))",
-        "(deny network*)",
-      ].join(" ");
-      return {
-        command: sandboxExec,
-        args: ["-p", profile, "--", claudeBin, ...claudeArgs],
-      };
-    } catch {
-      // sandbox-exec not available — fall through
-    }
-  }
-
-  // Windows / fallback: relies on --allowedTools "Skill" + PreToolUse hooks
-  return { command: claudeBin, args: claudeArgs };
+function buildSpawnTarget(claudeBin: string, claudeArgs: string[]): SpawnTarget {
+  const shell = process.platform === "win32";
+  return { command: claudeBin, args: claudeArgs, shell };
 }
 
 // ── Main export ────────────────────────────────────────────────────────────────
@@ -147,7 +96,6 @@ export function runWithSkillStreaming(
     "--output-format", "stream-json",
     "--include-partial-messages",
     "--verbose",
-    "--allowedTools", "Skill",
   ];
 
   if (settings.maxBudgetUsd > 0) {
@@ -159,13 +107,14 @@ export function runWithSkillStreaming(
     claudeArgs.push("--resume", sessionId);
   }
 
-  const { command, args } = buildIsolatedSpawn(settings.claudeBinPath, claudeArgs);
+  const { command, args, shell } = buildSpawnTarget(settings.claudeBinPath, claudeArgs);
 
   // Fall back to home directory if working directory is not configured
   const cwd = settings.workingDirectory.trim() || os.homedir();
 
   const proc = spawn(command, args, {
     cwd,
+    shell,
     env: { ...process.env, HOME: os.homedir(), CLAUDE_OBSIDIAN_PLUGIN: "1" },
   });
 

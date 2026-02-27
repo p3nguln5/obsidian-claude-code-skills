@@ -7,7 +7,12 @@
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production"
   },
-  "keywords": ["obsidian", "claude", "ai", "claude-code"],
+  "keywords": [
+    "obsidian",
+    "claude",
+    "ai",
+    "claude-code"
+  ],
   "author": "p3nguln5",
   "license": "MIT",
   "devDependencies": {

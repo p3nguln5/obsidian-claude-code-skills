@@ -41,14 +41,14 @@ export class ClaudePanel extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Claude Code";
+    return "Claude";
   }
 
   getIcon(): string {
     return "bot";
   }
 
-  async onOpen(): Promise<void> {
+  onOpen(): void {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass("claude-panel-root");
@@ -96,19 +96,19 @@ export class ClaudePanel extends ItemView {
       }
     });
 
-    const createNoteBtn = actionRow.createEl("button", { text: "Create Note" });
+    const createNoteBtn = actionRow.createEl("button", { text: "Create note" });
     createNoteBtn.addEventListener("click", () => void this.createNote());
 
     const closeBtn = actionRow.createEl("button", {
       cls: "claude-close-session-btn",
-      text: "Close Session",
+      text: "Close session",
     });
     closeBtn.addEventListener("click", () => this.closeSession());
 
     this.updateInputState();
   }
 
-  async onClose(): Promise<void> {
+  onClose(): void {
     this.cancelFn?.();
     this.cancelFn = null;
   }
@@ -273,7 +273,7 @@ export class ClaudePanel extends ItemView {
         textToRender,
         renderedEl,
         sourcePath,
-        this.plugin
+        this
       ).catch(() => {
         renderedEl.empty();
         renderedEl.createEl("pre").setText(textToRender);

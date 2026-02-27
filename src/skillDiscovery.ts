@@ -18,7 +18,7 @@ function parseFrontmatter(content: string): Record<string, string> {
   return result;
 }
 
-export async function discoverSkills(): Promise<Skill[]> {
+export function discoverSkills(): Skill[] {
   const skillsDir = path.join(os.homedir(), ".claude", "skills");
 
   let entries: fs.Dirent[];

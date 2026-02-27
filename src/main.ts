@@ -59,18 +59,18 @@ export default class ClaudeCodeSkillsPlugin extends Plugin {
       if (detected) {
         this.settings.claudeBinPath = detected;
         await this.saveSettings();
-        new Notice(`Claude Code Skills: binary auto-detected at ${detected}`);
+        new Notice(`Claude binary auto-detected at ${detected}`);
       } else {
         new Notice(
-          "Claude Code Skills: claude binary not found. Set the path in Settings → Claude Code Skills."
+          "Claude binary not found. Set the path in plugin settings."
         );
       }
     }
 
-    this.skills = await discoverSkills();
+    this.skills = discoverSkills();
 
     if (this.skills.length === 0) {
-      new Notice("Claude Code Skills: No skills found in ~/.claude/skills/");
+      new Notice("No skills found in ~/.claude/skills/");
     }
 
     // Register the side panel view
@@ -80,24 +80,22 @@ export default class ClaudeCodeSkillsPlugin extends Plugin {
     );
 
     // Context menu: right-click selected text → skill → open side panel
-    registerContextMenu(this, this.skills, async (skill, selectedText) => {
-      const panel = await this.openPanel();
-      panel.startConversation(skill, selectedText);
+    // If enabledSkills is empty all skills are shown; otherwise filter to the enabled set.
+    registerContextMenu(this, this.getEnabledSkills(), (skill, selectedText) => {
+      void this.openPanel().then((panel) => panel.startConversation(skill, selectedText));
     });
 
     // Ribbon icon: opens the panel in freeform chat mode
-    this.addRibbonIcon("bot", "Claude Code Skills", async () => {
-      const panel = await this.openPanel();
-      panel.startFreeform();
+    this.addRibbonIcon("bot", "Open skills panel", () => {
+      void this.openPanel().then((panel) => panel.startFreeform());
     });
 
     // Command palette entry
     this.addCommand({
       id: "open-claude-panel",
-      name: "Open Claude Code Skills panel",
-      callback: async () => {
-        const panel = await this.openPanel();
-        panel.startFreeform();
+      name: "Open panel",
+      callback: () => {
+        void this.openPanel().then((panel) => panel.startFreeform());
       },
     });
 
@@ -118,6 +116,15 @@ export default class ClaudeCodeSkillsPlugin extends Plugin {
 
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
+  }
+
+  /**
+   * Returns the subset of discovered skills that are enabled in settings.
+   * An empty enabledSkills list means all skills are enabled.
+   */
+  getEnabledSkills(): Skill[] {
+    if (this.settings.enabledSkills.length === 0) return this.skills;
+    return this.skills.filter((s) => this.settings.enabledSkills.includes(s.id));
   }
 
   /**
