@@ -361,7 +361,7 @@ export class ClaudePanel extends ItemView {
 
     try {
       const file = await this.app.vault.create(filePath, noteContent);
-      this.app.workspace.openLinkText(file.path, "", true);
+      await this.app.workspace.openLinkText(file.path, "", true);
       new Notice(`Created: ${file.path}`);
     } catch (err) {
       new Notice(`Failed to create note: ${(err as Error).message}`);

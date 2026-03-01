@@ -137,7 +137,7 @@ export default class ClaudeCodeSkillsPlugin extends Plugin {
     // Reuse if already open
     const existing = workspace.getLeavesOfType(CLAUDE_PANEL_VIEW_TYPE);
     if (existing.length > 0) {
-      workspace.revealLeaf(existing[0]);
+      await workspace.revealLeaf(existing[0]);
       return existing[0].view as ClaudePanel;
     }
 
@@ -147,7 +147,7 @@ export default class ClaudeCodeSkillsPlugin extends Plugin {
       throw new Error("Claude Code Skills: could not open a sidebar panel");
     }
     await leaf.setViewState({ type: CLAUDE_PANEL_VIEW_TYPE, active: true });
-    workspace.revealLeaf(leaf);
+    await workspace.revealLeaf(leaf);
     return leaf.view as ClaudePanel;
   }
 }

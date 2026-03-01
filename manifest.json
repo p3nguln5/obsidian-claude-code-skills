@@ -1,7 +1,7 @@
 {
   "id": "claude-code-skills",
   "name": "Claude Code Skills",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "minAppVersion": "1.4.0",
   "description": "Stream Claude Code skill responses into a persistent side panel from any note.",
   "author": "p3nguln5",
