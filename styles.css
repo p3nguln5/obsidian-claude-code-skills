@@ -280,12 +280,12 @@
   color: var(--text-normal);
 }
 
-.claude-close-session-btn {
-  margin-left: auto !important;
-  color: var(--text-error) !important;
-  border-color: var(--background-modifier-error) !important;
+.claude-panel-action-row .claude-close-session-btn {
+  margin-left: auto;
+  color: var(--text-error);
+  border-color: var(--background-modifier-error);
 }
 
-.claude-close-session-btn:hover {
-  background: var(--background-modifier-error) !important;
+.claude-panel-action-row .claude-close-session-btn:hover {
+  background: var(--background-modifier-error);
 }
