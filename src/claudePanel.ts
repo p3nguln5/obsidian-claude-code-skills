@@ -48,7 +48,7 @@ export class ClaudePanel extends ItemView {
     return "bot";
   }
 
-  onOpen(): void {
+  async onOpen(): Promise<void> {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass("claude-panel-root");
@@ -108,7 +108,7 @@ export class ClaudePanel extends ItemView {
     this.updateInputState();
   }
 
-  onClose(): void {
+  async onClose(): Promise<void> {
     this.cancelFn?.();
     this.cancelFn = null;
   }
@@ -182,9 +182,9 @@ export class ClaudePanel extends ItemView {
 
     // Loading dots — visible until first text chunk arrives
     this.loadingEl = this.currentStreamContainer.createDiv({ cls: "claude-loading-dots" });
-    this.loadingEl.createEl("span");
-    this.loadingEl.createEl("span");
-    this.loadingEl.createEl("span");
+    this.loadingEl.createSpan();
+    this.loadingEl.createSpan();
+    this.loadingEl.createSpan();
 
     // currentStreamPre is created lazily on the first chunk (see appendChunk)
     this.currentStreamPre = null;
@@ -209,7 +209,7 @@ export class ClaudePanel extends ItemView {
         new Notice(`Claude error: ${err.message}`);
         if (this.currentStreamContainer) {
           this.currentStreamContainer.empty();
-          this.currentStreamContainer.createEl("span", {
+          this.currentStreamContainer.createSpan({
             cls: "claude-error",
             text: `Error: ${err.message}`,
           });

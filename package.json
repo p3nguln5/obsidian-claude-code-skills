@@ -1,6 +1,6 @@
 {
   "name": "obsidian-claude-code-skills",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Stream Claude Code skill responses into a persistent side panel from any note.",
   "main": "main.js",
   "scripts": {
@@ -17,7 +17,6 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "builtin-modules": "^3.3.0",
     "esbuild": "^0.21.0",
     "obsidian": "latest",
     "tslib": "^2.6.0",

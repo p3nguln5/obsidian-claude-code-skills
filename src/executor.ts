@@ -126,7 +126,7 @@ export function runWithSkillStreaming(
   let capturedSessionId: string | null = null;
   let killed = false;
 
-  const timeoutId = setTimeout(() => {
+  const timeoutId = activeWindow.setTimeout(() => {
     if (!killed) {
       killed = true;
       proc.kill();
@@ -143,7 +143,7 @@ export function runWithSkillStreaming(
       if (!line.trim()) continue;
       let event: Record<string, unknown>;
       try {
-        event = JSON.parse(line);
+        event = JSON.parse(line) as Record<string, unknown>;
       } catch {
         continue;
       }
@@ -180,14 +180,14 @@ export function runWithSkillStreaming(
   });
 
   proc.on("close", () => {
-    clearTimeout(timeoutId);
+    activeWindow.clearTimeout(timeoutId);
     if (!killed) {
       onDone(finalResult, capturedSessionId);
     }
   });
 
   proc.on("error", (err: Error) => {
-    clearTimeout(timeoutId);
+    activeWindow.clearTimeout(timeoutId);
     if (!killed) {
       killed = true;
       onError(err);
@@ -197,7 +197,7 @@ export function runWithSkillStreaming(
   return () => {
     if (!killed) {
       killed = true;
-      clearTimeout(timeoutId);
+      activeWindow.clearTimeout(timeoutId);
       proc.kill();
     }
   };

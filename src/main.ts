@@ -111,7 +111,7 @@ export default class ClaudeCodeSkillsPlugin extends Plugin {
       {},
       DEFAULT_SETTINGS,
       await this.loadData()
-    );
+    ) as PluginSettings;
   }
 
   async saveSettings(): Promise<void> {
@@ -138,7 +138,7 @@ export default class ClaudeCodeSkillsPlugin extends Plugin {
     const existing = workspace.getLeavesOfType(CLAUDE_PANEL_VIEW_TYPE);
     if (existing.length > 0) {
       await workspace.revealLeaf(existing[0]);
-      return existing[0].view as ClaudePanel;
+      return existing[0].view as unknown as ClaudePanel;
     }
 
     // Open in right sidebar
@@ -148,6 +148,6 @@ export default class ClaudeCodeSkillsPlugin extends Plugin {
     }
     await leaf.setViewState({ type: CLAUDE_PANEL_VIEW_TYPE, active: true });
     await workspace.revealLeaf(leaf);
-    return leaf.view as ClaudePanel;
+    return leaf.view as unknown as ClaudePanel;
   }
 }

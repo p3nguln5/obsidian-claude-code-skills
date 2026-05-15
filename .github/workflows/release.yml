@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   build:
@@ -31,6 +33,16 @@ jobs:
           test -f manifest.json || (echo "ERROR: manifest.json missing" && exit 1)
           test -f styles.css   || (echo "ERROR: styles.css missing" && exit 1)
           echo "Build artifacts verified."
+
+      - name: Attest main.js
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: main.js
+
+      - name: Attest styles.css
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: styles.css
 
       - name: Create release
         env:
