@@ -6,7 +6,7 @@ import type { PluginSettings } from "./types";
 
 // ── Path validation ────────────────────────────────────────────────────────────
 
-const VALID_BINARY_NAMES = ["claude", "claude-code", "claude.cmd"];
+const VALID_BINARY_NAMES = ["claude", "claude-code", "claude.cmd", "claude.exe"];
 
 function validatePaths(settings: PluginSettings): void {
   const name = path.basename(settings.claudeBinPath);
