@@ -189,7 +189,10 @@ export default class ClaudeCodeSkillsPlugin extends Plugin {
       // class. Leave the panel alone: text in it must stay selectable so it can
       // be copied, and there is nowhere to drag it to anyway.
       if (e.target.closest(".claude-panel-root")) return;
-      const host = e.target.closest(".cm-content, .markdown-preview-view, .markdown-rendered");
+      // Only the note itself: the editor, or the reading view. Not
+      // .markdown-rendered, which every plugin that renders Markdown uses for
+      // its own panels - HiNote's comments and highlights among them.
+      const host = e.target.closest(".cm-content, .markdown-preview-view");
       if (!host) return;
 
       const sel = doc.defaultView?.getSelection();
