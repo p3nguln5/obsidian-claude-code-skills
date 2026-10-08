@@ -289,3 +289,130 @@
 .claude-panel-action-row .claude-close-session-btn:hover {
   background: var(--background-modifier-error);
 }
+
+/* ── Dragged-in attachments ─────────────────────────────────────────────── */
+
+.claude-attach-tray { display: flex; flex-direction: column; gap: 4px; }
+.claude-attach-tray.is-empty { display: none; }
+
+.claude-card-row { display: flex; flex-wrap: wrap; gap: 5px; }
+
+.claude-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 22px 5px 6px;
+  max-width: 100%;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 7px;
+  background: var(--background-secondary);
+}
+
+.claude-card-row.is-sent .claude-card {
+  padding-right: 8px;
+  background: var(--background-primary-alt);
+}
+
+.claude-card-thumb,
+.claude-card-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 4px;
+  background: var(--background-primary);
+  flex-shrink: 0;
+}
+
+.claude-card-thumb { object-fit: cover; }
+
+.claude-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  font-size: 15px;
+}
+
+.claude-card-body { min-width: 0; }
+
+.claude-card-title {
+  font-size: 11.5px;
+  color: var(--text-normal);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.claude-card-sub { font-size: 10px; color: var(--text-faint); }
+
+.claude-card-x {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0 3px;
+  height: auto;
+  line-height: 1;
+  color: var(--text-faint);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.claude-card-x:hover { color: var(--text-normal); }
+
+.claude-attach-clear {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  height: auto;
+  font-size: 10.5px;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+
+.claude-attach-clear:hover { color: var(--text-normal); }
+
+.claude-msg-text { margin-top: 6px; white-space: pre-wrap; }
+
+.claude-drag-ghost {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  max-width: 260px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  border: 1px solid var(--background-modifier-border);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.28);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.claude-drag-ghost.is-over {
+  border-color: var(--interactive-accent);
+  color: var(--text-normal);
+}
+
+.claude-panel-root.claude-drop-active {
+  outline: 2px dashed var(--interactive-accent);
+  outline-offset: -4px;
+}
+
+.claude-panel-root.claude-drop-active .claude-attach-tray.is-empty {
+  display: flex;
+  min-height: 20px;
+}
+
+.claude-panel-root.claude-drop-active .claude-attach-tray::before {
+  content: "drop to attach";
+  font-size: 10.5px;
+  color: var(--interactive-accent);
+}

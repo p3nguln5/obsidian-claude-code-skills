@@ -99,7 +99,161 @@ export default class ClaudeCodeSkillsPlugin extends Plugin {
       },
     });
 
+    // Attach the current selection without reaching for the mouse
+    this.addCommand({
+      id: "attach-selection-to-panel",
+      name: "Attach selection to Claude panel",
+      callback: () => void this.attachSelectionToPanel(),
+    });
+
+    this.registerEvent(
+      this.app.workspace.on("editor-menu", (menu, editor) => {
+        if (!editor.getSelection().trim()) return;
+        menu.addItem((item) =>
+          item
+            .setTitle("Attach selection to Claude panel")
+            .setIcon("bot")
+            .onClick(() => void this.attachSelectionToPanel())
+        );
+      })
+    );
+
+    this.enableSelectionDrag();
     this.addSettingTab(new ClaudeSkillsSettingTab(this.app, this));
+  }
+
+  private sourceName(): string {
+    const f = this.app.workspace.getActiveFile();
+    return f ? f.basename : "note";
+  }
+
+  async attachSelectionToPanel(): Promise<void> {
+    const active = this.app.workspace.activeEditor;
+    let sel = active?.editor ? active.editor.getSelection() : "";
+    if (!sel.trim()) sel = activeWindow.getSelection()?.toString() ?? "";
+    if (!sel.trim()) {
+      new Notice("Select something first");
+      return;
+    }
+    const panel = await this.openPanel();
+    panel.attachText(sel.replace(/\s+$/, ""), this.sourceName());
+  }
+
+  /**
+   * Lets a selection be dragged into the panel.
+   *
+   * Both the editor and the reading view answer a mousedown by starting a
+   * fresh selection, so a selection could never be picked up: the press that
+   * should begin a drag wipes it instead. Rather than fight them for the
+   * browser's own drag, this holds the mousedown back when it lands inside an
+   * existing selection and runs the drag itself - a small label follows the
+   * cursor, and releasing over the panel attaches the text. A press that never
+   * moves just places the caret, as it would have done.
+   */
+  private enableSelectionDrag(): void {
+    const doc = activeDocument;
+    let pending: { x: number; y: number; text: string; source: string } | null = null;
+    let ghost: HTMLElement | null = null;
+    let dragging = false;
+
+    const panel = () => {
+      const leaves = this.app.workspace.getLeavesOfType(CLAUDE_PANEL_VIEW_TYPE);
+      return leaves.length ? (leaves[0].view as unknown as ClaudePanel) : null;
+    };
+    const overPanel = (x: number, y: number): boolean => {
+      const view = panel();
+      if (!view?.containerEl) return false;
+      const r = view.containerEl.getBoundingClientRect();
+      return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+    };
+    const paint = (on: boolean) => {
+      const view = panel();
+      if (!view?.contentEl) return;
+      if (on) view.contentEl.addClass("claude-drop-active");
+      else view.contentEl.removeClass("claude-drop-active");
+    };
+    const cleanup = () => {
+      ghost?.remove();
+      ghost = null;
+      paint(false);
+      pending = null;
+      dragging = false;
+    };
+
+    this.registerDomEvent(doc, "mousedown", (e: MouseEvent) => {
+      cleanup();
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+      const host =
+        e.target instanceof Element
+          ? e.target.closest(".cm-content, .markdown-preview-view, .markdown-rendered")
+          : null;
+      if (!host) return;
+
+      const sel = doc.defaultView?.getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount) return;
+      const text = sel.toString();
+      if (!text.trim()) return;
+
+      // Only when the press is actually on the selected text
+      let hit = false;
+      const rects = sel.getRangeAt(0).getClientRects();
+      for (let i = 0; i < rects.length; i++) {
+        const r = rects[i];
+        if (
+          e.clientX >= r.left - 2 && e.clientX <= r.right + 2 &&
+          e.clientY >= r.top - 1 && e.clientY <= r.bottom + 1
+        ) {
+          hit = true;
+          break;
+        }
+      }
+      if (!hit) return;
+
+      pending = { x: e.clientX, y: e.clientY, text, source: this.sourceName() };
+      e.preventDefault();
+      e.stopPropagation();
+    }, true);
+
+    this.registerDomEvent(doc, "mousemove", (e: MouseEvent) => {
+      if (!pending) return;
+      if (!dragging) {
+        if (Math.abs(e.clientX - pending.x) + Math.abs(e.clientY - pending.y) < 5) return;
+        dragging = true;
+        ghost = doc.body.createDiv({ cls: "claude-drag-ghost" });
+        const t = pending.text.trim();
+        ghost.setText(t.slice(0, 50) + (t.length > 50 ? "…" : ""));
+      }
+      ghost!.style.left = e.clientX + 14 + "px";
+      ghost!.style.top = e.clientY + 14 + "px";
+      const on = overPanel(e.clientX, e.clientY);
+      ghost!.toggleClass("is-over", on);
+      paint(on);
+      e.preventDefault();
+    }, true);
+
+    this.registerDomEvent(doc, "mouseup", (e: MouseEvent) => {
+      if (!pending) return;
+      const held = pending;
+      const moved = dragging;
+      const onPanel = overPanel(e.clientX, e.clientY);
+      cleanup();
+
+      if (moved && onPanel) {
+        void this.openPanel().then((p) =>
+          p.attachText(held.text.replace(/\s+$/, ""), held.source)
+        );
+        return;
+      }
+      if (!moved) {
+        const range = doc.caretRangeFromPoint(e.clientX, e.clientY);
+        const sel = doc.defaultView?.getSelection();
+        if (range && sel) {
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      }
+    }, true);
   }
 
   onunload(): void {

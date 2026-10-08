@@ -8,6 +8,13 @@ import {
 import type ClaudeCodeSkillsPlugin from "./main";
 import type { Skill } from "./types";
 import { runWithSkillStreaming } from "./executor";
+import {
+  type Attachment,
+  attachmentsPreamble,
+  buildCard,
+  kindOf,
+  resolveVaultPath,
+} from "./attachments";
 
 export const CLAUDE_PANEL_VIEW_TYPE = "claude-skills-chat";
 
@@ -30,6 +37,8 @@ export class ClaudePanel extends ItemView {
   private loadingEl: HTMLElement | null = null;
   private currentStreamPre: HTMLPreElement | null = null;
   private currentStreamContainer: HTMLElement | null = null;
+  private attachments: Attachment[] = [];
+  private attachTray!: HTMLElement;
 
   constructor(leaf: WorkspaceLeaf, plugin: ClaudeCodeSkillsPlugin) {
     super(leaf);
@@ -63,6 +72,11 @@ export class ClaudePanel extends ItemView {
 
     // ── Footer ───────────────────────────────────────────────────────────────
     const footer = contentEl.createDiv({ cls: "claude-panel-footer" });
+
+    // Attachment tray: whatever has been dragged in, waiting to be sent
+    this.attachTray = footer.createDiv({ cls: "claude-attach-tray" });
+    this.setupDropTarget(this.containerEl, contentEl);
+    this.renderAttachments();
 
     // Input row
     const inputRow = footer.createDiv({ cls: "claude-panel-input-row" });
@@ -159,10 +173,151 @@ export class ClaudePanel extends ItemView {
 
   private handleSend(): void {
     const text = this.inputEl.value.trim();
-    if (!text || this.isStreaming) return;
+    const atts = this.attachments;
+    if ((!text && !atts.length) || this.isStreaming) return;
     this.inputEl.value = "";
-    this.addUserBubble(text);
-    this.send(null, text); // null skillId = follow-up / freeform
+    this.addUserMessage(text, atts);
+    const payload = attachmentsPreamble(atts) + (text || "Explain what I attached.");
+    this.attachments = [];
+    this.renderAttachments();
+    this.send(null, payload); // null skillId = follow-up / freeform
+  }
+
+  // ── Dragged-in attachments ─────────────────────────────────────────────────
+
+  /**
+   * Accepts drops anywhere in the panel. The listeners are in the capture
+   * phase on the whole leaf, because the textarea would otherwise swallow
+   * dropped text before it ever reached us.
+   */
+  private setupDropTarget(rootEl: HTMLElement, paintEl: HTMLElement): void {
+    const stop = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    const over = (e: DragEvent) => {
+      stop(e);
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+      paintEl.addClass("claude-drop-active");
+    };
+
+    rootEl.addEventListener("dragenter", over, true);
+    rootEl.addEventListener("dragover", over, true);
+    rootEl.addEventListener("dragleave", (e: DragEvent) => {
+      if (!rootEl.contains(e.relatedTarget as Node)) paintEl.removeClass("claude-drop-active");
+    }, true);
+
+    rootEl.addEventListener("drop", (e: DragEvent) => {
+      stop(e);
+      paintEl.removeClass("claude-drop-active");
+      const dt = e.dataTransfer;
+      if (!dt) return;
+
+      // A file from Finder or the file explorer
+      if (dt.files && dt.files.length) {
+        Array.from(dt.files).forEach((f) => {
+          const p = (f as File & { path?: string }).path ?? f.name;
+          this.addAttachment({ kind: kindOf(p), label: p.split("/").pop() ?? p, path: p });
+        });
+        return;
+      }
+
+      const html = dt.getData("text/html") || "";
+      const uri = dt.getData("text/uri-list") || "";
+      const text = (dt.getData("text/plain") || "").replace(/\s+$/, "");
+
+      // An embed dragged out of a note: ![[some image.png]]
+      const link = text.trim().match(/^!?\[\[([^\]|]+)(\|[^\]]*)?\]\]$/);
+      if (link) {
+        const p = resolveVaultPath(this.app, link[1].trim());
+        if (p) {
+          this.addAttachment({ kind: kindOf(p), label: p.split("/").pop() ?? p, path: p });
+          return;
+        }
+      }
+
+      // A rendered image
+      const img = html.match(/<img[^>]+src="([^"]+)"/i);
+      const src = (img && img[1]) || uri;
+      if (src && !text.trim()) {
+        const p = resolveVaultPath(this.app, src);
+        if (p) {
+          this.addAttachment({ kind: kindOf(p), label: p.split("/").pop() ?? p, path: p });
+          return;
+        }
+      }
+
+      if (text.trim()) this.attachText(text);
+    }, true);
+  }
+
+  /** Attaches a passage of text. Called by the drop handler and from main.ts. */
+  attachText(text: string, sourceName?: string): void {
+    const source = sourceName ?? this.describeSource();
+    const first = text.split("\n").find((l) => l.trim()) ?? text;
+    const trimmed = first.trim();
+    this.addAttachment({
+      kind: "text",
+      label: trimmed.slice(0, 60) + (trimmed.length > 60 ? "…" : ""),
+      text,
+      source,
+    });
+  }
+
+  private describeSource(): string {
+    const f = this.app.workspace.getActiveFile();
+    return f ? f.basename : "note";
+  }
+
+  private addAttachment(att: Attachment): void {
+    if ("path" in att && this.attachments.some((x) => "path" in x && x.path === att.path)) return;
+    this.attachments.push(att);
+    this.renderAttachments();
+    this.inputEl?.focus();
+  }
+
+  private renderAttachments(): void {
+    if (!this.attachTray) return;
+    this.attachTray.empty();
+    const list = this.attachments;
+    this.attachTray.toggleClass("is-empty", list.length === 0);
+    if (!list.length) return;
+
+    const row = this.attachTray.createDiv({ cls: "claude-card-row" });
+    list.forEach((att, i) => {
+      buildCard(row, att, this.app, () => {
+        this.attachments.splice(i, 1);
+        this.renderAttachments();
+      });
+    });
+
+    const clear = this.attachTray.createEl("button", {
+      cls: "claude-attach-clear",
+      text: "clear " + list.length,
+    });
+    clear.addEventListener("click", () => {
+      this.attachments = [];
+      this.renderAttachments();
+    });
+  }
+
+  /** The sent message: attachment cards first, then what the user typed. */
+  private addUserMessage(text: string, atts: Attachment[]): void {
+    const div = this.messagesEl.createDiv({ cls: "claude-msg-user" });
+    div.createDiv({ cls: "claude-msg-label" }).setText("You");
+    const content = div.createDiv({ cls: "claude-msg-content" });
+
+    if (atts.length) {
+      const row = content.createDiv({ cls: "claude-card-row is-sent" });
+      atts.forEach((att) => buildCard(row, att, this.app, null));
+    }
+    if (text) content.createDiv({ cls: "claude-msg-text" }).setText(text);
+
+    const logged = atts
+      .map((att) => (att.kind === "text" ? `> ${att.label} (from ${att.source})` : `> ${att.path}`))
+      .join("\n");
+    this.conversationLog.push(`**You:** ${logged ? logged + "\n\n" : ""}${text}`);
+    this.scrollToBottom();
   }
 
   private send(skillId: string | null, text: string): void {
