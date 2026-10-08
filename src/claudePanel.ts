@@ -18,6 +18,17 @@ import {
 
 export const CLAUDE_PANEL_VIEW_TYPE = "claude-skills-chat";
 
+/**
+ * Sent once at the start of a session. Claude Code reads files by line number
+ * and will happily answer "see line 153", which is no use in Obsidian: the
+ * reader sees rendered prose with no line numbers and nothing to click.
+ */
+const CITING_PLACES =
+  "How to point me at somewhere in my vault: give a link I can click, " +
+  "[[Note name#Heading]], or [[Note name]] with the sentence quoted so I can " +
+  "search for it. Never cite a line number - Obsidian does not show them, so " +
+  "I cannot find what you mean.\n\n---\n\n";
+
 export class ClaudePanel extends ItemView {
   plugin: ClaudeCodeSkillsPlugin;
 
@@ -321,6 +332,8 @@ export class ClaudePanel extends ItemView {
   }
 
   private send(skillId: string | null, text: string): void {
+    // First message of a session: say how to refer to places in the vault.
+    const body = this.sessionId ? text : CITING_PLACES + text;
     this.isStreaming = true;
     this.hasFirstChunk = false;
     this.updateInputState();
@@ -348,7 +361,7 @@ export class ClaudePanel extends ItemView {
 
     const cancel = runWithSkillStreaming(
       skillId,
-      text,
+      body,
       this.plugin.settings,
       this.sessionId,
       (chunk) => this.appendChunk(chunk),
@@ -434,6 +447,7 @@ export class ClaudePanel extends ItemView {
         renderedEl.createEl("pre").setText(textToRender);
       });
 
+      this.openInternalLinksFrom(renderedEl);
       this.addMessageActions(container, renderedEl, textToRender);
     }
 
@@ -477,6 +491,19 @@ export class ClaudePanel extends ItemView {
    * swaps the rendered answer for its Markdown, so any part of it can be
    * selected and copied with the syntax intact - which rendered HTML loses.
    */
+  /** A [[wikilink]] in an answer opens the note, like one in a note would. */
+  private openInternalLinksFrom(el: HTMLElement): void {
+    el.addEventListener("click", (e: MouseEvent) => {
+      const a = (e.target as HTMLElement).closest("a.internal-link") as HTMLAnchorElement | null;
+      if (!a) return;
+      e.preventDefault();
+      const href = a.getAttr("data-href") ?? a.getAttribute("href") ?? "";
+      if (!href) return;
+      const newLeaf = e.metaKey || e.ctrlKey;
+      void this.app.workspace.openLinkText(href, "", newLeaf);
+    });
+  }
+
   private addMessageActions(container: HTMLElement, renderedEl: HTMLElement, raw: string): void {
     const bar = container.createDiv({ cls: "claude-msg-actions" });
 
