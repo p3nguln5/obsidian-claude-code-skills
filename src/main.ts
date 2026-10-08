@@ -184,10 +184,12 @@ export default class ClaudeCodeSkillsPlugin extends Plugin {
       cleanup();
       if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
 
-      const host =
-        e.target instanceof Element
-          ? e.target.closest(".cm-content, .markdown-preview-view, .markdown-rendered")
-          : null;
+      if (!(e.target instanceof Element)) return;
+      // Answers in the panel are rendered markdown too, and they carry the same
+      // class. Leave the panel alone: text in it must stay selectable so it can
+      // be copied, and there is nowhere to drag it to anyway.
+      if (e.target.closest(".claude-panel-root")) return;
+      const host = e.target.closest(".cm-content, .markdown-preview-view, .markdown-rendered");
       if (!host) return;
 
       const sel = doc.defaultView?.getSelection();

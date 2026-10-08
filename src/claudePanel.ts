@@ -433,6 +433,8 @@ export class ClaudePanel extends ItemView {
         renderedEl.empty();
         renderedEl.createEl("pre").setText(textToRender);
       });
+
+      this.addMessageActions(container, renderedEl, textToRender);
     }
 
     this.skillLabelEl.setText(
@@ -468,6 +470,39 @@ export class ClaudePanel extends ItemView {
     div.createDiv({ cls: "claude-msg-content" }).setText(text);
     this.conversationLog.push(`**You:** ${text}`);
     this.scrollToBottom();
+  }
+
+  /**
+   * Per-message controls. "Copy" takes the whole answer as Markdown; "Source"
+   * swaps the rendered answer for its Markdown, so any part of it can be
+   * selected and copied with the syntax intact - which rendered HTML loses.
+   */
+  private addMessageActions(container: HTMLElement, renderedEl: HTMLElement, raw: string): void {
+    const bar = container.createDiv({ cls: "claude-msg-actions" });
+
+    const copyBtn = bar.createEl("button", { text: "copy markdown" });
+    copyBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(raw)
+        .then(() => new Notice("Answer copied as Markdown"))
+        .catch(() => new Notice("Copy failed — check clipboard permissions"));
+    });
+
+    const srcBtn = bar.createEl("button", { text: "source" });
+    let pre: HTMLElement | null = null;
+    srcBtn.addEventListener("click", () => {
+      if (pre) {
+        pre.remove();
+        pre = null;
+        renderedEl.show();
+        srcBtn.setText("source");
+        return;
+      }
+      pre = container.createEl("pre", { cls: "claude-msg-source" });
+      pre.createEl("code").setText(raw);
+      container.insertBefore(pre, bar);
+      renderedEl.hide();
+      srcBtn.setText("rendered");
+    });
   }
 
   private scrollToBottom(): void {
